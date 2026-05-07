@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Management API — Live System</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e17;
+  --bg2:#0f1520;
+  --bg3:#141c2e;
+  --bg4:#1a2438;
+  --border:#1e2d45;
+  --border2:#253550;
+  --text:#e8edf5;
+  --text2:#8899bb;
+  --text3:#4d6080;
+  --green:#00e676;
+  --green-dim:#003d20;
+  --blue:#4db6ff;
+  --blue-dim:#0a2a45;
+  --amber:#ffb74d;
+  --amber-dim:#3d2800;
+  --red:#ff5252;
+  --red-dim:#3d0a0a;
+  --purple:#b39ddb;
+  --cyan:#80deea;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-sans)}
+
+/* LAYOUT */
+.shell{display:grid;grid-template-rows:56px 1fr;height:100vh;overflow:hidden}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;position:relative;z-index:10}
+.logo{font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--blue);letter-spacing:1px}
+.logo span{color:var(--text3)}
+.topbar-sep{flex:1}
+.status-pill{display:flex;align-items:center;gap:6px;background:var(--green-dim);border:1px solid #00c85330;padding:4px 12px;border-radius:20px;font-size:11px;font-family:var(--font-mono);color:var(--green)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.base-url{font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-left:8px}
+
+.main{display:grid;grid-template-columns:280px 1fr 320px;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-section{padding:12px 0}
+.sidebar-label{font-size:10px;letter-spacing:1.5px;font-weight:600;color:var(--text3);padding:6px 16px;text-transform:uppercase}
+.endpoint-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;transition:background .15s;border-left:3px solid transparent}
+.endpoint-item:hover{background:var(--bg3)}
+.endpoint-item.active{background:var(--bg3);border-left-color:var(--blue)}
+.method-tag{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:2px 8px;border-radius:3px;min-width:48px;text-align:center;letter-spacing:.5px}
+.GET{background:#0a2a45;color:#4db6ff;border:1px solid #1a4a7520}
+.POST{background:#003d20;color:#00e676;border:1px solid #00c85320}
+.PUT{background:#3d2800;color:#ffb74d;border:1px solid #c8820020}
+.DELETE{background:#3d0a0a;color:#ff5252;border:1px solid #c8202020}
+.ep-path{font-family:var(--font-mono);font-size:11px;color:var(--text2)}
+.ep-desc{font-size:10px;color:var(--text3);margin-top:1px}
+
+.db-panel{padding:12px 0;border-top:1px solid var(--border)}
+.db-count{font-family:var(--font-mono);font-size:28px;font-weight:600;color:var(--text);padding:4px 16px}
+.db-sub{font-size:11px;color:var(--text3);padding:0 16px 8px}
+.db-mini-list{padding:0 12px}
+.db-mini-item{display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border)}
+.db-mini-item:last-child{border-bottom:none}
+.db-id{font-family:var(--font-mono);font-size:10px;color:var(--text3);min-width:24px}
+.db-name{font-size:11px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db-grade{font-family:var(--font-mono);font-size:10px;padding:1px 6px;border-radius:2px}
+
+/* EDITOR */
+.editor{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.editor-tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border)}
+.etab{padding:0 20px;height:40px;display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;color:var(--text3);transition:all .15s;white-space:nowrap}
+.etab.active{color:var(--text);border-bottom-color:var(--blue);background:var(--bg)}
+.etab:hover:not(.active){color:var(--text2)}
+.editor-body{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
+.request-builder{padding:20px;display:flex;flex-direction:column;gap:16px;height:100%;overflow-y:auto}
+.rb-row{display:flex;gap:10px;align-items:center}
+.method-select{font-family:var(--font-mono);font-size:13px;font-weight:600;padding:10px 14px;border:1px solid var(--border2);border-radius:6px;background:var(--bg3);color:var(--text);cursor:pointer;appearance:none;min-width:100px}
+.url-input{flex:1;font-family:var(--font-mono);font-size:13px;padding:10px 14px;border:1px solid var(--border2);border-radius:6px;background:var(--bg3);color:var(--text);outline:none}
+.url-input:focus{border-color:var(--blue)}
+.send-btn{padding:10px 24px;background:var(--blue);color:#000;font-family:var(--font-mono);font-size:13px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.send-btn:hover{opacity:.85}
+.send-btn:active{transform:scale(.98)}
+
+.section-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.body-editor{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;overflow:hidden}
+.body-editor textarea{width:100%;background:transparent;border:none;color:var(--text);font-family:var(--font-mono);font-size:12.5px;padding:14px;resize:none;outline:none;line-height:1.7;min-height:120px}
+
+/* RESPONSE */
+.response-panel{border-top:1px solid var(--border);flex:1;display:flex;flex-direction:column;min-height:0}
+.response-header{padding:12px 20px;background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.res-status{font-family:var(--font-mono);font-size:12px;font-weight:600;padding:3px 10px;border-radius:4px}
+.s200,.s201{background:var(--green-dim);color:var(--green);border:1px solid #00e67620}
+.s400,.s404,.s422{background:var(--red-dim);color:var(--red);border:1px solid #ff525220}
+.res-time{font-family:var(--font-mono);font-size:11px;color:var(--text3)}
+.response-body{flex:1;overflow-y:auto;padding:16px 20px;font-family:var(--font-mono);font-size:12px;line-height:1.8;min-height:0}
+.json-key{color:#80cbc4}
+.json-str{color:#a5d6a7}
+.json-num{color:#ffcc80}
+.json-bool{color:#cf94da}
+.json-null{color:#ff8a65}
+
+/* HISTORY PANEL */
+.history-panel{background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.history-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.history-title{font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.5px}
+.clear-btn{font-size:10px;font-family:var(--font-mono);color:var(--text3);background:none;border:1px solid var(--border2);padding:3px 8px;border-radius:3px;cursor:pointer}
+.clear-btn:hover{color:var(--text2);border-color:var(--text3)}
+.history-list{flex:1;overflow-y:auto}
+.history-item{padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.history-item:hover{background:var(--bg3)}
+.hi-row{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.hi-status{font-family:var(--font-mono);font-size:10px;padding:1px 6px;border-radius:2px}
+.hi-method{font-family:var(--font-mono);font-size:10px;font-weight:600}
+.hi-path{font-family:var(--font-mono);font-size:11px;color:var(--text2)}
+.hi-time{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* CODE VIEW */
+.code-view{height:100%;overflow-y:auto;padding:20px;font-family:var(--font-mono);font-size:12.5px;line-height:1.8}
+.code-view pre{white-space:pre-wrap}
+.c-cm{color:#546e8a}.c-kw{color:#cf94da}.c-fn{color:#80cbc4}
+.c-st{color:#a5d6a7}.c-nm{color:#ffcc80}.c-dc{color:#4db6ff}
+
+/* DB TABLE VIEW */
+.db-view{padding:20px;overflow-y:auto;height:100%}
+.db-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.db-table th{padding:10px 14px;text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border2);font-weight:600;background:var(--bg2)}
+.db-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text2);font-family:var(--font-mono)}
+.db-table tr:hover td{background:var(--bg3);color:var(--text)}
+.grade-pill{padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600}
+.grade-a{background:#003d20;color:var(--green)}
+.grade-b{background:#0a2a45;color:var(--blue)}
+.grade-c{background:#3d2800;color:var(--amber)}
+.del-row-btn{background:none;border:1px solid var(--border2);color:var(--text3);font-size:10px;padding:2px 8px;border-radius:3px;cursor:pointer;font-family:var(--font-mono)}
+.del-row-btn:hover{border-color:var(--red);color:var(--red)}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-state .icon{font-size:32px;margin-bottom:12px}
+.empty-icon{font-size:28px;display:block;margin-bottom:8px}
+
+/* Quick buttons */
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 12px}
+.quick-btn{padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;cursor:pointer;text-align:left;transition:background .15s}
+.quick-btn:hover{background:var(--bg4)}
+.qb-method{font-family:var(--font-mono);font-size:9px;font-weight:600;margin-bottom:2px}
+.qb-desc{font-size:10px;color:var(--text3)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:6px;font-family:var(--font-mono);font-size:12px;z-index:9999;animation:slideIn .3s ease;pointer-events:none}
+.toast.ok{background:var(--green-dim);color:var(--green);border:1px solid #00e67640}
+.toast.err{background:var(--red-dim);color:var(--red);border:1px solid #ff525240}
+@keyframes slideIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+select option{background:#0f1520}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">STUDENT<span>/</span>API</div>
+  <div class="base-url">BASE URL: http://localhost:5000</div>
+  <div class="topbar-sep"></div>
+  <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-right:12px">Python Flask · JSON · RESTful</div>
+  <div class="status-pill"><span class="dot"></span>API RUNNING</div>
+</div>
+
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Endpoints</div>
+
+      <div class="endpoint-item active" onclick="loadEndpoint('GET','/api/students','','Get all students')">
+        <span class="method-tag GET">GET</span>
+        <div><div class="ep-path">/api/students</div><div class="ep-desc">Fetch all students</div></div>
+      </div>
+      <div class="endpoint-item" onclick="loadEndpoint('GET','/api/students/1','','Get student by ID')">
+        <span class="method-tag GET">GET</span>
+        <div><div class="ep-path">/api/students/:id</div><div class="ep-desc">Fetch one student</div></div>
+      </div>
+      <div class="endpoint-item" onclick="loadEndpoint('POST','/api/students','{&quot;name&quot;:&quot;Faith Lungu&quot;,&quot;age&quot;:21,&quot;course&quot;:&quot;Computer Science&quot;,&quot;grade&quot;:&quot;A&quot;}','Create new student')">
+        <span class="method-tag POST">POST</span>
+        <div><div class="ep-path">/api/students</div><div class="ep-desc">Create student</div></div>
+      </div>
+      <div class="endpoint-item" onclick="loadEndpoint('PUT','/api/students/1','{&quot;grade&quot;:&quot;A+&quot;}','Update student')">
+        <span class="method-tag PUT">PUT</span>
+        <div><div class="ep-path">/api/students/:id</div><div class="ep-desc">Update student</div></div>
+      </div>
+      <div class="endpoint-item" onclick="loadEndpoint('DELETE','/api/students/1','','Delete student')">
+        <span class="method-tag DELETE">DELETE</span>
+        <div><div class="ep-path">/api/students/:id</div><div class="ep-desc">Remove student</div></div>
+      </div>
+      <div class="endpoint-item" onclick="loadEndpoint('GET','/api/health','','Health check')">
+        <span class="method-tag GET">GET</span>
+        <div><div class="ep-path">/api/health</div><div class="ep-desc">Health check</div></div>
+      </div>
+    </div>
+
+    <div class="db-panel">
+      <div class="sidebar-label">Live Database</div>
+      <div class="db-count" id="db-count">5</div>
+      <div class="db-sub">Students in memory</div>
+      <div class="db-mini-list" id="db-mini-list"></div>
+    </div>
+
+    <div style="padding:10px 0 4px;border-top:1px solid var(--border)">
+      <div class="sidebar-label" style="margin-bottom:6px">Quick Fire</div>
+      <div class="quick-grid">
+        <div class="quick-btn" onclick="quickFire('GET','/api/students','')">
+          <div class="qb-method GET" style="color:#4db6ff">GET ALL</div>
+          <div class="qb-desc">All students</div>
+        </div>
+        <div class="quick-btn" onclick="quickFire('GET','/api/students/2','')">
+          <div class="qb-method GET" style="color:#4db6ff">GET ONE</div>
+          <div class="qb-desc">Student ID=2</div>
+        </div>
+        <div class="quick-btn" onclick="quickFire('GET','/api/students/999','')">
+          <div class="qb-method DELETE" style="color:#ff5252">404 ERR</div>
+          <div class="qb-desc">Invalid ID</div>
+        </div>
+        <div class="quick-btn" onclick="quickFire('POST','/api/students','{&quot;name&quot;:&quot;Test&quot;}')">
+          <div class="qb-method PUT" style="color:#ffb74d">400 ERR</div>
+          <div class="qb-desc">Missing fields</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITOR -->
+  <div class="editor">
+    <div class="editor-tabs">
+      <div class="etab active" onclick="switchTab('request',this)">⚡ Request Builder</div>
+      <div class="etab" onclick="switchTab('code',this)">{'</>'}  Flask Source Code</div>
+      <div class="etab" onclick="switchTab('db',this)">⊞  Database View</div>
+    </div>
+    <div class="editor-body">
+
+      <!-- REQUEST TAB -->
+      <div id="tab-request" class="request-builder">
+        <div>
+          <div class="section-label" style="margin-bottom:8px">Request</div>
+          <div class="rb-row">
+            <select class="method-select" id="req-method" onchange="onMethodChange()">
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+              <option value="PUT">PUT</option>
+              <option value="DELETE">DELETE</option>
+            </select>
+            <input class="url-input" id="req-url" value="/api/students" placeholder="/api/students">
+            <button class="send-btn" onclick="sendRequest()">▶  SEND</button>
+          </div>
+        </div>
+
+        <div id="body-section" style="display:none">
+          <div class="section-label" style="margin-bottom:8px">Request Body (JSON)</div>
+          <div class="body-editor">
+            <textarea id="req-body" spellcheck="false" rows="6" placeholder='{\n  "name": "Alice",\n  "age": 20,\n  "course": "Computer Science",\n  "grade": "A"\n}'></textarea>
+          </div>
+          <div style="margin-top:6px;font-size:11px;color:var(--text3);font-family:var(--font-mono)">Content-Type: application/json</div>
+        </div>
+
+        <div>
+          <div class="section-label" style="margin-bottom:8px">Parameters</div>
+          <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:12px 14px;font-size:12px;font-family:var(--font-mono);color:var(--text2)">
+            <span style="color:var(--text3)">:id</span> — integer student ID (e.g., 1, 2, 3…)
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label" style="margin-bottom:8px">Headers</div>
+          <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:12px 14px;font-size:12px;font-family:var(--font-mono);color:var(--text2)">
+            <span style="color:#80cbc4">Accept</span>: application/json<br>
+            <span style="color:#80cbc4">Content-Type</span>: application/json
+          </div>
+        </div>
+
+        <!-- RESPONSE -->
+        <div class="response-panel" style="border:1px solid var(--border);border-radius:6px;overflow:hidden;min-height:160px;flex:1">
+          <div class="response-header" style="border-top:none">
+            <span style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Response</span>
+            <span class="res-status" id="res-status" style="display:none"></span>
+            <span class="res-time" id="res-time"></span>
+            <div style="flex:1"></div>
+            <span style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">JSON</span>
+          </div>
+          <div class="response-body" id="res-body">
+            <div class="empty-state">
+              <span class="empty-icon">◉</span>
+              <div style="font-size:12px">Send a request to see the response</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CODE TAB -->
+      <div id="tab-code" class="code-view" style="display:none">
+<pre><span class="c-cm"># ─────────────────────────────────────────────────────────────────
+# Student Management API — student_api.py
+# Built with Python Flask · Run: python student_api.py
+# ─────────────────────────────────────────────────────────────────</span>
+
+<span class="c-kw">from</span> flask <span class="c-kw">import</span> Flask, jsonify, request
+<span class="c-kw">from</span> flask_cors <span class="c-kw">import</span> CORS
+
+app = Flask(__name__)
+CORS(app)  <span class="c-cm"># Allow cross-origin requests from any browser</span>
+
+<span class="c-cm"># ── In-memory data store (replaces a database for this demo) ──────</span>
+students = [
+    {<span class="c-st">"id"</span>: 1, <span class="c-st">"name"</span>: <span class="c-st">"Alice Mwamba"</span>,   <span class="c-st">"age"</span>: 20, <span class="c-st">"course"</span>: <span class="c-st">"Computer Science"</span>,    <span class="c-st">"grade"</span>: <span class="c-st">"A"</span>},
+    {<span class="c-st">"id"</span>: 2, <span class="c-st">"name"</span>: <span class="c-st">"Brian Chanda"</span>,   <span class="c-st">"age"</span>: 22, <span class="c-st">"course"</span>: <span class="c-st">"Information Systems"</span>, <span class="c-st">"grade"</span>: <span class="c-st">"B+"</span>},
+    {<span class="c-st">"id"</span>: 3, <span class="c-st">"name"</span>: <span class="c-st">"Chola Tembo"</span>,    <span class="c-st">"age"</span>: 21, <span class="c-st">"course"</span>: <span class="c-st">"Software Eng."</span>,       <span class="c-st">"grade"</span>: <span class="c-st">"A-"</span>},
+    {<span class="c-st">"id"</span>: 4, <span class="c-st">"name"</span>: <span class="c-st">"Diana Phiri"</span>,    <span class="c-st">"age"</span>: 23, <span class="c-st">"course"</span>: <span class="c-st">"Data Science"</span>,        <span class="c-st">"grade"</span>: <span class="c-st">"B"</span>},
+    {<span class="c-st">"id"</span>: 5, <span class="c-st">"name"</span>: <span class="c-st">"Emmanuel Banda"</span>, <span class="c-st">"age"</span>: 20, <span class="c-st">"course"</span>: <span class="c-st">"Cybersecurity"</span>,       <span class="c-st">"grade"</span>: <span class="c-st">"A+"</span>},
+]
+next_id = 6
+
+<span class="c-kw">def</span> <span class="c-fn">find_student</span>(sid):
+    <span class="c-kw">return</span> next((s <span class="c-kw">for</span> s <span class="c-kw">in</span> students <span class="c-kw">if</span> s[<span class="c-st">"id"</span>] == sid), None)
+
+
+<span class="c-cm"># ── GET /api/students → Fetch ALL students ────────────────────────</span>
+@app.route(<span class="c-st">"/api/students"</span>, methods=[<span class="c-st">"GET"</span>])
+<span class="c-kw">def</span> <span class="c-fn">get_all_students</span>():
+    <span class="c-kw">return</span> jsonify({
+        <span class="c-st">"status"</span>: <span class="c-st">"success"</span>,
+        <span class="c-st">"count"</span>: len(students),
+        <span class="c-st">"students"</span>: students
+    }), <span class="c-nm">200</span>
+
+
+<span class="c-cm"># ── GET /api/students/:id → Fetch ONE student ─────────────────────</span>
+@app.route(<span class="c-st">"/api/students/&lt;int:student_id&gt;"</span>, methods=[<span class="c-st">"GET"</span>])
+<span class="c-kw">def</span> <span class="c-fn">get_student</span>(student_id):
+    student = find_student(student_id)
+    <span class="c-kw">if not</span> student:
+        <span class="c-kw">return</span> jsonify({
+            <span class="c-st">"status"</span>: <span class="c-st">"error"</span>,
+            <span class="c-st">"message"</span>: <span class="c-dc">f</span><span class="c-st">"Student with ID {student_id} not found"</span>
+        }), <span class="c-nm">404</span>
+    <span class="c-kw">return</span> jsonify({<span class="c-st">"status"</span>: <span class="c-st">"success"</span>, <span class="c-st">"student"</span>: student}), <span class="c-nm">200</span>
+
+
+<span class="c-cm"># ── POST /api/students → Create a new student ─────────────────────</span>
+@app.route(<span class="c-st">"/api/students"</span>, methods=[<span class="c-st">"POST"</span>])
+<span class="c-kw">def</span> <span class="c-fn">create_student</span>():
+    <span class="c-kw">global</span> next_id
+    data = request.get_json()
+    <span class="c-kw">if not</span> data:
+        <span class="c-kw">return</span> jsonify({<span class="c-st">"status"</span>: <span class="c-st">"error"</span>, <span class="c-st">"message"</span>: <span class="c-st">"Request body must be JSON"</span>}), <span class="c-nm">400</span>
+
+    required = [<span class="c-st">"name"</span>, <span class="c-st">"age"</span>, <span class="c-st">"course"</span>, <span class="c-st">"grade"</span>]
+    missing = [f <span class="c-kw">for</span> f <span class="c-kw">in</span> required <span class="c-kw">if</span> f <span class="c-kw">not in</span> data]
+    <span class="c-kw">if</span> missing:
+        <span class="c-kw">return</span> jsonify({
+            <span class="c-st">"status"</span>: <span class="c-st">"error"</span>,
+            <span class="c-st">"message"</span>: <span class="c-dc">f</span><span class="c-st">"Missing required fields: {', '.join(missing)}"</span>
+        }), <span class="c-nm">400</span>
+
+    new_student = {<span class="c-st">"id"</span>: next_id, <span class="c-st">"name"</span>: data[<span class="c-st">"name"</span>],
+                   <span class="c-st">"age"</span>: data[<span class="c-st">"age"</span>], <span class="c-st">"course"</span>: data[<span class="c-st">"course"</span>], <span class="c-st">"grade"</span>: data[<span class="c-st">"grade"</span>]}
+    students.append(new_student)
+    next_id += <span class="c-nm">1</span>
+    <span class="c-kw">return</span> jsonify({<span class="c-st">"status"</span>: <span class="c-st">"success"</span>, <span class="c-st">"message"</span>: <span class="c-st">"Student created"</span>,
+                    <span class="c-st">"student"</span>: new_student}), <span class="c-nm">201</span>
+
+
+<span class="c-cm"># ── PUT /api/students/:id → Update a student ──────────────────────</span>
+@app.route(<span class="c-st">"/api/students/&lt;int:student_id&gt;"</span>, methods=[<span class="c-st">"PUT"</span>])
+<span class="c-kw">def</span> <span class="c-fn">update_student</span>(student_id):
+    student = find_student(student_id)
+    <span class="c-kw">if not</span> student:
+        <span class="c-kw">return</span> jsonify({<span class="c-st">"status"</span>: <span class="c-st">"error"</span>,
+                        <span class="c-st">"message"</span>: <span class="c-dc">f</span><span class="c-st">"Student {student_id} not found"</span>}), <span class="c-nm">404</span>
+
+    data = request.get_json()
+    <span class="c-kw">for</span> field <span class="c-kw">in</span> [<span class="c-st">"name"</span>, <span class="c-st">"age"</span>, <span class="c-st">"course"</span>, <span class="c-st">"grade"</span>]:
+        <span class="c-kw">if</span> field <span class="c-kw">in</span> data:
+            student[field] = data[field]
+    <span class="c-kw">return</span> jsonify({<span class="c-st">"status"</span>: <span class="c-st">"success"</span>, <span class="c-st">"message"</span>: <span class="c-st">"Student updated"</span>,
+                    <span class="c-st">"student"</span>: student}), <span class="c-nm">200</span>
+
+
+<span class="c-cm"># ── DELETE /api/students/:id → Remove a student ───────────────────</span>
+@app.route(<span class="c-st">"/api/students/&lt;int:student_id&gt;"</span>, methods=[<span class="c-st">"DELETE"</span>])
+<span class="c-kw">def</span> <span class="c-fn">delete_student</span>(student_id):
+    student = find_student(student_id)
+    <span class="c-kw">if not</span> student:
+        <span class="c-kw">return</span> jsonify({<span class="c-st">"status"</span>: <span class="c-st">"error"</span>,
+                        <span class="c-st">"message"</span>: <span class="c-dc">f</span><span class="c-st">"Student {student_id} not found"</span>}), <span class="c-nm">404</span>
+    students.remove(student)
+    <span class="c-kw">return</span> jsonify({<span class="c-st">"status"</span>: <span class="c-st">"success"</span>,
+                    <span class="c-st">"message"</span>: <span class="c-dc">f</span><span class="c-st">"Student {student_id} deleted successfully"</span>}), <span class="c-nm">200</span>
+
+
+<span class="c-cm"># ── GET /api/health → Health check ───────────────────────────────</span>
+@app.route(<span class="c-st">"/api/health"</span>, methods=[<span class="c-st">"GET"</span>])
+<span class="c-kw">def</span> <span class="c-fn">health</span>():
+    <span class="c-kw">return</span> jsonify({<span class="c-st">"status"</span>: <span class="c-st">"ok"</span>, <span class="c-st">"message"</span>: <span class="c-st">"Student API is running"</span>}), <span class="c-nm">200</span>
+
+
+<span class="c-kw">if</span> __name__ == <span class="c-st">"__main__"</span>:
+    <span class="c-nm">print</span>(<span class="c-st">"Starting on http://localhost:5000"</span>)
+    app.run(debug=True, port=<span class="c-nm">5000</span>)
+</pre>
+<div style="margin-top:20px;padding:14px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;font-size:11px;color:var(--text3);font-family:var(--font-mono)">
+  <div style="color:var(--text2);margin-bottom:8px;font-size:12px;font-weight:600">▸ Install &amp; Run</div>
+  <div style="color:var(--green);margin-bottom:4px">pip install flask flask-cors</div>
+  <div style="color:var(--green)">python student_api.py</div>
+  <div style="margin-top:10px;color:var(--text3)">Then open a browser or Postman → http://localhost:5000/api/students</div>
+</div>
+      </div>
+
+      <!-- DB TAB -->
+      <div id="tab-db" class="db-view" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text)">Live Student Records</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px;font-family:var(--font-mono)">Changes made via API are reflected here instantly</div>
+          </div>
+          <button class="send-btn" onclick="switchTab('request',null);loadEndpoint('POST','/api/students','{&quot;name&quot;:&quot;New Student&quot;,&quot;age&quot;:20,&quot;course&quot;:&quot;Computer Science&quot;,&quot;grade&quot;:&quot;B&quot;}','Create new student')" style="font-size:11px;padding:7px 14px">+ Add Student</button>
+        </div>
+        <table class="db-table">
+          <thead>
+            <tr><th>ID</th><th>Name</th><th>Age</th><th>Course</th><th>Grade</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="db-tbody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- HISTORY PANEL -->
+  <div class="history-panel">
+    <div class="history-header">
+      <div class="history-title">REQUEST LOG</div>
+      <button class="clear-btn" onclick="clearHistory()">CLEAR</button>
+    </div>
+    <div class="history-list" id="history-list">
+      <div class="empty-state" style="padding:24px 12px">
+        <span class="empty-icon" style="font-size:20px">◎</span>
+        <div style="font-size:11px">No requests yet</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ── IN-BROWSER API ENGINE ────────────────────────────────────────
+let students = [
+  {id:1, name:"Alice Mwamba",   age:20, course:"Computer Science",    grade:"A"},
+  {id:2, name:"Brian Chanda",   age:22, course:"Information Systems", grade:"B+"},
+  {id:3, name:"Chola Tembo",    age:21, course:"Software Engineering",grade:"A-"},
+  {id:4, name:"Diana Phiri",    age:23, course:"Data Science",        grade:"B"},
+  {id:5, name:"Emmanuel Banda", age:20, course:"Cybersecurity",       grade:"A+"},
+];
+let nextId = 6;
+let history = [];
+
+function apiEngine(method, url, body) {
+  // Parse URL
+  const getAll  = /^\/api\/students\/?$/.test(url) && method==='GET';
+  const getOne  = /^\/api\/students\/(\d+)\/?$/.exec(url);
+  const postS   = /^\/api\/students\/?$/.test(url) && method==='POST';
+  const putS    = /^\/api\/students\/(\d+)\/?$/.exec(url) && method==='PUT';
+  const deleteS = /^\/api\/students\/(\d+)\/?$/.exec(url) && method==='DELETE';
+  const health  = /^\/api\/health\/?$/.test(url);
+
+  if (health) return {status:200, body:{status:"ok", message:"Student Management API is running"}};
+
+  if (getAll) {
+    return {status:200, body:{status:"success", count:students.length, students: JSON.parse(JSON.stringify(students))}};
+  }
+
+  if (method==='GET' && getOne) {
+    const id = parseInt(getOne[1]);
+    const s = students.find(x=>x.id===id);
+    if (!s) return {status:404, body:{status:"error", message:`Student with ID ${id} not found`}};
+    return {status:200, body:{status:"success", student:JSON.parse(JSON.stringify(s))}};
+  }
+
+  if (postS) {
+    let data;
+    try { data = JSON.parse(body); } catch(e) {
+      return {status:400, body:{status:"error", message:"Request body must be valid JSON"}};
+    }
+    if (!data) return {status:400, body:{status:"error", message:"Request body must be JSON"}};
+    const required = ["name","age","course","grade"];
+    const missing = required.filter(f => !(f in data));
+    if (missing.length) return {status:400, body:{status:"error", message:`Missing required fields: ${missing.join(', ')}`}};
+    const ns = {id:nextId++, name:data.name, age:data.age, course:data.course, grade:data.grade};
+    students.push(ns);
+    refreshSidebar(); refreshDbTable();
+    return {status:201, body:{status:"success", message:"Student created successfully", student:ns}};
+  }
+
+  if (method==='PUT' && putS) {
+    const id = parseInt(putS[1]);
+    const s = students.find(x=>x.id===id);
+    if (!s) return {status:404, body:{status:"error", message:`Student with ID ${id} not found`}};
+    let data;
+    try { data = JSON.parse(body); } catch(e) {
+      return {status:400, body:{status:"error", message:"Request body must be valid JSON"}};
+    }
+    ["name","age","course","grade"].forEach(f=>{ if(f in data) s[f]=data[f]; });
+    refreshSidebar(); refreshDbTable();
+    return {status:200, body:{status:"success", message:"Student updated successfully", student:JSON.parse(JSON.stringify(s))}};
+  }
+
+  if (method==='DELETE' && deleteS) {
+    const id = parseInt(deleteS[1]);
+    const idx = students.findIndex(x=>x.id===id);
+    if (idx===-1) return {status:404, body:{status:"error", message:`Student with ID ${id} not found`}};
+    students.splice(idx,1);
+    refreshSidebar(); refreshDbTable();
+    return {status:200, body:{status:"success", message:`Student ${id} deleted successfully`}};
+  }
+
+  return {status:404, body:{status:"error", message:`Endpoint ${method} ${url} not found`}};
+}
+
+// ── SYNTAX HIGHLIGHT ─────────────────────────────────────────────
+function highlight(obj) {
+  const json = JSON.stringify(obj, null, 2);
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+    if (/^"/.test(match)) {
+      if (/:$/.test(match)) return `<span class="json-key">${match}</span>`;
+      return `<span class="json-str">${match}</span>`;
+    }
+    if (/true|false/.test(match)) return `<span class="json-bool">${match}</span>`;
+    if (/null/.test(match)) return `<span class="json-null">${match}</span>`;
+    return `<span class="json-num">${match}</span>`;
+  });
+}
+
+// ── SEND REQUEST ─────────────────────────────────────────────────
+function sendRequest() {
+  const method = document.getElementById('req-method').value;
+  const url = document.getElementById('req-url').value.trim();
+  const body = document.getElementById('req-body').value.trim();
+
+  const start = Date.now();
+  // Simulate network delay
+  setTimeout(()=>{
+    const delay = Date.now()-start;
+    const fakeDelay = Math.floor(Math.random()*30)+8;
+    const result = apiEngine(method, url, body);
+
+    // Show status
+    const statusEl = document.getElementById('res-status');
+    statusEl.style.display = 'inline-block';
+    statusEl.textContent = `${result.status} ${getStatusText(result.status)}`;
+    statusEl.className = `res-status s${result.status}`;
+    document.getElementById('res-time').textContent = `${fakeDelay}ms`;
+
+    // Show body
+    document.getElementById('res-body').innerHTML = `<pre>${highlight(result.body)}</pre>`;
+
+    // Add to history
+    addHistory(method, url, result.status, fakeDelay);
+
+    // Toast
+    const ok = result.status < 300;
+    showToast(ok ? `${result.status} ${getStatusText(result.status)}` : `Error: ${result.status}`, ok ? 'ok':'err');
+  }, Math.floor(Math.random()*40)+10);
+}
+
+function quickFire(method, url, body) {
+  document.getElementById('req-method').value = method;
+  document.getElementById('req-url').value = url;
+  document.getElementById('req-body').value = body;
+  onMethodChange();
+  // Switch to request tab
+  document.querySelectorAll('.etab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('[id^="tab-"]').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.etab')[0].classList.add('active');
+  document.getElementById('tab-request').style.display='flex';
+  sendRequest();
+}
+
+function getStatusText(s) {
+  return {200:'OK',201:'Created',400:'Bad Request',404:'Not Found',422:'Unprocessable'}[s]||'';
+}
+
+function onMethodChange() {
+  const m = document.getElementById('req-method').value;
+  document.getElementById('body-section').style.display = (m==='POST'||m==='PUT')?'block':'none';
+}
+
+function loadEndpoint(method, url, body, desc) {
+  document.querySelectorAll('.endpoint-item').forEach(e=>e.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  document.getElementById('req-method').value = method;
+  document.getElementById('req-url').value = url;
+  try { document.getElementById('req-body').value = body ? JSON.stringify(JSON.parse(body),null,2) : ''; } catch(e) { document.getElementById('req-body').value = body||''; }
+  onMethodChange();
+  // switch to request tab
+  document.querySelectorAll('.etab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('[id^="tab-"]').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.etab')[0].classList.add('active');
+  document.getElementById('tab-request').style.display='flex';
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────
+function addHistory(method, url, status, ms) {
+  history.unshift({method, url, status, ms, time: new Date().toLocaleTimeString()});
+  renderHistory();
+}
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (!history.length) {
+    el.innerHTML='<div class="empty-state" style="padding:24px 12px"><span class="empty-icon" style="font-size:20px">◎</span><div style="font-size:11px">No requests yet</div></div>';
+    return;
+  }
+  el.innerHTML = history.map((h,i)=>`
+    <div class="history-item" onclick="replayHistory(${i})">
+      <div class="hi-row">
+        <span class="hi-status ${h.status<300?'s200':'s404'}">${h.status}</span>
+        <span class="hi-method ${h.method}" style="color:${methodColor(h.method)}">${h.method}</span>
+        <span class="hi-path">${h.url}</span>
+      </div>
+      <div class="hi-time">${h.time} · ${h.ms}ms</div>
+    </div>
+  `).join('');
+}
+function replayHistory(i) {
+  const h = history[i];
+  document.getElementById('req-method').value = h.method;
+  document.getElementById('req-url').value = h.url;
+  onMethodChange();
+  sendRequest();
+}
+function clearHistory() { history=[]; renderHistory(); }
+function methodColor(m) {
+  return {GET:'#4db6ff',POST:'#00e676',PUT:'#ffb74d',DELETE:'#ff5252'}[m]||'#aaa';
+}
+
+// ── SIDEBAR DB ────────────────────────────────────────────────────
+function refreshSidebar() {
+  document.getElementById('db-count').textContent = students.length;
+  document.getElementById('db-mini-list').innerHTML = students.slice(0,6).map(s=>`
+    <div class="db-mini-item">
+      <span class="db-id">#${s.id}</span>
+      <span class="db-name">${s.name}</span>
+      <span class="db-grade grade-pill ${gradeClass(s.grade)}">${s.grade}</span>
+    </div>
+  `).join('') + (students.length>6?`<div style="font-size:10px;color:var(--text3);padding:4px 4px">+${students.length-6} more…</div>`:'');
+}
+function refreshDbTable() {
+  const tbody = document.getElementById('db-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = students.map(s=>`
+    <tr>
+      <td>${s.id}</td>
+      <td>${s.name}</td>
+      <td>${s.age}</td>
+      <td>${s.course}</td>
+      <td><span class="grade-pill ${gradeClass(s.grade)}">${s.grade}</span></td>
+      <td>
+        <button class="del-row-btn" onclick="quickDelete(${s.id})">DELETE</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function quickDelete(id) {
+  const result = apiEngine('DELETE', `/api/students/${id}`, '');
+  showToast(result.body.message, result.status<300?'ok':'err');
+  refreshDbTable();
+}
+function gradeClass(g) {
+  if (!g) return '';
+  if (g.startsWith('A')) return 'grade-a';
+  if (g.startsWith('B')) return 'grade-b';
+  return 'grade-c';
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.etab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('[id^="tab-"]').forEach(t=>t.style.display='none');
+  if(el) el.classList.add('active');
+  else document.querySelectorAll('.etab')[0].classList.add('active');
+  const t = document.getElementById('tab-'+name);
+  t.style.display = name==='request'?'flex':'block';
+  if(name==='db') refreshDbTable();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2500);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+refreshSidebar();
+onMethodChange();
+</script>
+</body>
+</html>
